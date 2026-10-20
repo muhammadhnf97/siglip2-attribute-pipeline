@@ -12,10 +12,11 @@ clustering-img/
 *.webp
 metadata.jsonl
 
-# cluster_people.py outputs (wherever they land)
+# cluster_images.py outputs (wherever they land)
 clusters.json
 clusters_report.*
 clusters_montage/
+.embeddings.npz
 .people_embeddings.npz
 
 # Training runs / checkpoints / compiled artifacts

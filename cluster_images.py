@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""cluster_people.py — estimate how many distinct people are in a folder of
-person crops.
+"""cluster_images.py — estimate how many visually distinct subjects are in a
+folder of images.
 
-Embeds every crop with the trained SigLIP2 backbone (garment-tuned features —
-clothing is the dominant identity signal in same-session footage), then
-clusters on cosine distance:
+Embeds every image with a trained SigLIP2 backbone (features are tuned by
+whatever attributes the checkpoint was trained on), then clusters on cosine
+distance:
 
   --method agglo   (default) AgglomerativeClustering with distance_threshold,
                    no k required. Without --threshold it sweeps a range and
@@ -12,32 +12,33 @@ clusters on cosine distance:
                    full count-vs-threshold curve so you can sanity-check.
   --method kmeans  sweeps k with silhouette_score. Included for comparison;
                    k-means assumes evenly-sized spherical clusters, which
-                   people-counts are not — prefer agglo.
+                   subject-counts are not — prefer agglo.
 
 Outputs:
   --out PATH       JSON {filename: cluster_id} + per-cluster predicted-attribute
                    summaries            (default <dir>/clusters.json)
-  --link-dir DIR   symlink crops into DIR/cluster-00001/... for eyeball review
+  --link-dir DIR   symlink images into DIR/cluster-00001/... for eyeball review
   --montage-dir DIR  one grid JPEG per cluster (easiest way to eyeball results;
                    default <dir>/clusters_montage/). Filename carries size,
                    coherence and dominant attributes:
-                   cluster-00003_n17_q86_male-tshirt-...jpg = 17 crops, 0.86
+                   cluster-00003_n17_q86_<attrs>.jpg = 17 images, 0.86
                    mean intra-cluster similarity. Low-q clusters are the
-                   suspicious ones (probably different people merged) — review
-                   those first.
+                   suspicious ones (probably different subjects merged) —
+                   review those first.
   <dir>/clusters_report.txt — per-cluster predicted-attribute profile, always
                    written (model-predicted attributes, not ground truth).
 
 Run with the `closure` conda env (has torch/transformers/sklearn):
-  ~/miniconda3/envs/closure/bin/python cluster_people.py /path/to/crops
+  ~/miniconda3/envs/closure/bin/python cluster_images.py /path/to/images
 
-Caveat: same person in different clothes = different cluster; different people
-in identical uniforms = same cluster. Good for single-session footage only.
+Caveat: visually distinct appearances of the same subject split into separate
+clusters; visually similar distinct subjects merge. Embedding quality is bound
+by the checkpoint's training domain — pass --checkpoint trained on the kind of
+images you're clustering.
 """
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 from collections import Counter
@@ -49,31 +50,6 @@ import torch
 from PIL import Image
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
-
-# dummy zone assignment — replace with real per-camera/per-location metadata
-# when available. Deterministic per filename so reruns are stable.
-ZONES = ["entrance", "food_court", "playground", "shopping"]
-ZONE_COLORS = {
-    "entrance": "#0ea5e9",
-    "food_court": "#f59e0b",
-    "playground": "#22c55e",
-    "shopping": "#a855f7",
-}
-
-
-def assign_zones(names: list[str]) -> dict[str, list[str]]:
-    """1-2 zones per image, seeded by filename hash — stable across reruns
-    even as the folder grows."""
-    out = {}
-    for n in names:
-        h = int.from_bytes(hashlib.md5(n.encode()).digest()[:8], "little")
-        zones = [ZONES[h % len(ZONES)]]
-        if (h >> 8) % 4 == 0:  # ~25% of images get a second zone
-            z2 = ZONES[(h >> 16) % len(ZONES)]
-            if z2 != zones[0]:
-                zones.append(z2)
-        out[n] = zones
-    return out
 
 
 def find_default_checkpoint(root: Path) -> Path:
@@ -187,7 +163,7 @@ def cluster_kmeans(x: np.ndarray, k_max: int):
 
 def cluster_quality(dist: np.ndarray, labels: np.ndarray) -> dict[int, float]:
     """Mean intra-cluster cosine similarity (1 - distance). Higher = tighter.
-    Low values flag clusters that likely merged different people."""
+    Low values flag clusters that likely merged different subjects."""
     sim = 1.0 - dist
     q = {}
     for c in np.unique(labels):
@@ -219,7 +195,7 @@ def cluster_profiles(preds: list[dict], labels: np.ndarray, groups: list[dict]):
 
 
 def dominant_profile(attrs: dict) -> str:
-    """'male-tshirt-none-short-trousers-sneakers-none' — top option per group."""
+    """Top option per group joined by dashes — e.g. 'male-tshirt-sneakers'."""
     return "-".join(next(iter(v)) for v in attrs.values()) or "nolabels"
 
 
@@ -233,7 +209,7 @@ def write_montages(
     cols: int = 6,
     max_per: int = 60,
 ):
-    """One JPEG grid per cluster: cluster-00003_n17_q86_male-tshirt-...jpg."""
+    """One JPEG grid per cluster: cluster-00003_n17_q86_<dominant-attrs>.jpg."""
     out_dir.mkdir(parents=True, exist_ok=True)
     for old in out_dir.glob("cluster-*.jpg"):
         old.unlink()
@@ -301,8 +277,8 @@ def _thumb_grid(members: list[Path], thumb: int = 72, cols: int = 4, max_per: in
 
 
 def write_pdf(out_path: Path, *, dir_name: str, ckpt: str, method: str, picked,
-              paths, names, labels, sizes, quality, profiles, groups, image_zones):
-    """Pretty PDF report: cover stats + zone index + per-cluster cards."""
+              paths, labels, sizes, quality, profiles, groups):
+    """Pretty PDF report: cover stats + per-cluster cards."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -325,15 +301,12 @@ def write_pdf(out_path: Path, *, dir_name: str, ckpt: str, method: str, picked,
         return Paragraph(s, body)
 
     n_img, n_clusters = len(paths), len(sizes)
-    cluster_zones = {c: sorted({z for i, l in enumerate(labels)
-                                for z in image_zones[names[i]] if l == c})
-                     for c in range(n_clusters)}
 
     story = []
 
     band = Table([[Paragraph(
-        f'<font color="white" size="20"><b>Person Cluster Report</b></font><br/>'
-        f'<font color="#c7d2fe" size="10">{dir_name} — {n_img} crops → {n_clusters} estimated people</font>',
+        f'<font color="white" size="20"><b>Image Cluster Report</b></font><br/>'
+        f'<font color="#c7d2fe" size="10">{dir_name} — {n_img} images → {n_clusters} clusters</font>',
         ParagraphStyle("t", fontName="Helvetica-Bold", leading=26))]],
         colWidths=[180 * mm])
     band.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), INDIGO),
@@ -353,37 +326,20 @@ def write_pdf(out_path: Path, *, dir_name: str, ckpt: str, method: str, picked,
                        ParagraphStyle("s", fontName="Helvetica-Bold", leading=18,
                                       alignment=1))
               for k, v in [
-                  ("crops", n_img), ("people", n_clusters),
-                  ("seen once", int((sizes == 1).sum())),
+                  ("images", n_img), ("clusters", n_clusters),
+                  ("singletons", int((sizes == 1).sum())),
                   ("largest cluster", int(sizes.max()))]]]
     stat = Table(cards, colWidths=[45 * mm] * 4)
     stat.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#6366f1")),
                               ("TOPPADDING", (0, 0), (-1, -1), 10),
                               ("BOTTOMPADDING", (0, 0), (-1, -1), 10)]))
-    story += [stat, Spacer(1, 10)]
-
-    story.append(Paragraph("Zones", h2))
-    zone_rows = [[T(f'<font color="white"><b>&nbsp;{z}</b></font>'),
-                  T(f"{sum(1 for c in range(n_clusters) if z in cluster_zones[c])} people"),
-                  T(f"{sum(1 for n in names if z in image_zones[n])} crops")]
-                 for z in ZONES]
-    zt = Table(zone_rows, colWidths=[60 * mm, 40 * mm, 40 * mm])
-    zt.setStyle(TableStyle(
-        [("BACKGROUND", (0, i), (0, i), colors.HexColor(ZONE_COLORS[z]))
-         for i, z in enumerate(ZONES)]
-        + [("GRID", (0, 0), (-1, -1), 0.5, BORDER),
-           ("TOPPADDING", (0, 0), (-1, -1), 6),
-           ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
-    story += [zt, PageBreak()]
+    story += [stat, PageBreak()]
 
     story.append(Paragraph("Clusters", h2))
     order = sorted(range(n_clusters), key=lambda c: -sizes[c])
     for c in order:
         members = [p for p, l in zip(paths, labels) if l == c]
         attrs = profiles.get(c, {})
-        zones = cluster_zones[c]
-        zone_html = " ".join(
-            f'<font color="{ZONE_COLORS[z]}"><b>{z}</b></font>' for z in zones)
         profile_txt = " · ".join(
             f"{g['name'].lower()}={next(iter(attrs.get(g['name'].lower(), {'?': 0})))}"
             for g in groups)
@@ -401,7 +357,6 @@ def write_pdf(out_path: Path, *, dir_name: str, ckpt: str, method: str, picked,
         info = [
             T(f'<font size="12"><b>cluster-{c:05d}</b></font>'),
             T(f"n={int(sizes[c])} · coherence {quality[c]:.2f}"),
-            T(zone_html),
             T(f"<b>profile:</b> {profile_txt}{mixed_txt}"),
         ]
         img = RLImage(_thumb_grid(members), width=72 * mm * 4 / 4, height=None)
@@ -423,19 +378,19 @@ def write_pdf(out_path: Path, *, dir_name: str, ckpt: str, method: str, picked,
         canv.setFont("Helvetica", 8)
         canv.setFillColor(SUBTLE)
         canv.drawRightString(195 * mm, 10 * mm, f"page {doc.page}")
-        canv.drawString(15 * mm, 10 * mm, "cluster_people.py · dummy zones")
+        canv.drawString(15 * mm, 10 * mm, "cluster_images.py")
         canv.restoreState()
 
     SimpleDocTemplate(str(out_path), pagesize=A4,
                       leftMargin=15 * mm, rightMargin=15 * mm,
                       topMargin=15 * mm, bottomMargin=15 * mm,
-                      title="Person Cluster Report").build(
+                      title="Image Cluster Report").build(
         story, onFirstPage=footer, onLaterPages=footer)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("dir", type=Path, help="folder of person crops (searched recursively)")
+    ap.add_argument("dir", type=Path, help="folder of images (searched recursively)")
     ap.add_argument("--checkpoint", type=Path, default=None,
                     help="run dir or best.pt/last.pt (default: newest run under siglip2-runs/)")
     ap.add_argument("--method", choices=["agglo", "kmeans"], default="agglo")
@@ -444,7 +399,7 @@ def main():
     ap.add_argument("--k-max", type=int, default=200, help="kmeans sweep upper bound")
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--out", type=Path, default=None, help="clusters JSON path")
-    ap.add_argument("--link-dir", type=Path, default=None, help="symlink crops into per-cluster dirs")
+    ap.add_argument("--link-dir", type=Path, default=None, help="symlink images into per-cluster dirs")
     ap.add_argument("--montage-dir", type=Path, default=None,
                     help="one grid JPEG per cluster (default: <dir>/clusters_montage)")
     ap.add_argument("--no-montage", action="store_true", help="skip montage generation")
@@ -461,15 +416,17 @@ def main():
     ckpt = args.checkpoint or find_default_checkpoint(args.dir)
     print(f"checkpoint: {ckpt}")
 
-    cache = args.dir / ".people_embeddings.npz"
+    cache = args.dir / ".embeddings.npz"
+    legacy_cache = args.dir / ".people_embeddings.npz"
+    cache_read = cache if cache.exists() else legacy_cache
     names = [str(p.relative_to(args.dir)) for p in paths]
     x = preds = None
-    if cache.exists():
+    if cache_read.exists():
         try:
-            z = np.load(cache, allow_pickle=True)
+            z = np.load(cache_read, allow_pickle=True)
             if list(z["files"]) == names and str(z["ckpt"].item()) == str(ckpt) and "preds" in z:
                 x, preds = z["x"], [json.loads(s) for s in z["preds"]]
-                print(f"loaded cached embeddings from {cache}")
+                print(f"loaded cached embeddings from {cache_read}")
         except Exception:
             x = preds = None
     if x is None:
@@ -496,12 +453,11 @@ def main():
     sizes = np.bincount(labels)
     quality = cluster_quality(dist, labels)
     profiles = cluster_profiles(preds, labels, groups)
-    image_zones = assign_zones(names)
     print(f"\n{n_clusters} clusters from {len(paths)} images")
     print(f"  largest: {sorted((int(s) for s in sizes), reverse=True)[:10]}")
     print(f"  singletons: {(sizes == 1).sum()}, size<=3: {(sizes <= 3).sum()}")
 
-    # suspicious = big AND loose (different people probably merged into one)
+    # suspicious = big AND loose (different subjects probably merged into one)
     flagged = sorted(
         ((c, int(sizes[c]), quality[c]) for c in range(n_clusters) if sizes[c] >= 4),
         key=lambda t: t[2],
@@ -513,16 +469,10 @@ def main():
 
     out = args.out or args.dir / "clusters.json"
     mapping = {n: int(c) for n, c in zip(names, labels)}
-    cluster_zone_map = {
-        str(c): sorted({z for i, l in enumerate(labels) for z in image_zones[names[i]] if l == c})
-        for c in range(n_clusters)
-    }
     out.write_text(json.dumps({"checkpoint": str(ckpt), "method": args.method,
                                "picked": picked, "n_clusters": int(n_clusters),
-                               "zones": image_zones,
                                "summary": {
                                    str(c): {"n": int(sizes[c]), "coherence": round(quality[c], 3),
-                                            "zones": cluster_zone_map[str(c)],
                                             "attrs": profiles[c]}
                                    for c in range(n_clusters)
                                },
@@ -550,9 +500,9 @@ def main():
     if not args.no_pdf:
         pdf_path = args.pdf or (args.dir / "clusters_report.pdf")
         write_pdf(pdf_path, dir_name=args.dir.name, ckpt=str(ckpt),
-                  method=args.method, picked=picked, paths=paths, names=names,
+                  method=args.method, picked=picked, paths=paths,
                   labels=labels, sizes=sizes, quality=quality, profiles=profiles,
-                  groups=groups, image_zones=image_zones)
+                  groups=groups)
         print(f"pdf -> {pdf_path}")
 
 

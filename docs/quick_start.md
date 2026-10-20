@@ -19,8 +19,8 @@ dataset-collector (annotate + export)
         ▼
    siglip2_infer.py — imported by dataset-collector for pre-labeling
 
-side-step: best.pt ──► cluster_people.py ──► distinct-people estimate
-             (any crop folder — analysis only, not part of the artifact path)
+side-step: best.pt ──► cluster_images.py ──► distinct-subject estimate
+             (any image folder — analysis only, not part of the artifact path)
 ```
 
 ## Minimal walkthrough
@@ -72,5 +72,5 @@ pre-fills annotations for new uploads via `siglip2_infer.py`.
 | [export_onnx.md](export_onnx.md) | fp32→onnx bridge, graph I/O, parity check |
 | [deploy.md](deploy.md) | fp16/int8 TensorRT builds, calibration |
 | [benchmark.md](benchmark.md) | latency methodology, comparison table |
-| [cluster_people.md](cluster_people.md) | distinct-person estimation, thresholds, reports |
+| [cluster_images.md](cluster_images.md) | distinct-subject estimation, thresholds, reports |
 | [siglip2_infer.md](siglip2_infer.md) | shared checkpoint loader, quantization-aware load, name-based remapping |

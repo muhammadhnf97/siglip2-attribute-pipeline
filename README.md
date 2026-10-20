@@ -17,8 +17,8 @@ dataset export          train.py          quantize.py         deploy.py
                             predict.py / benchmark.py
                             (.pt / .onnx / .engine — auto-detected)
 
-side-step: best.pt ──► cluster_people.py ──► distinct-people estimate
-             (works on any folder of person crops, not just exports)
+side-step: best.pt ──► cluster_images.py ──► distinct-subject estimate
+             (works on any folder of images, not just exports)
 ```
 
 Every stage's output feeds the next; `predict.py` and `benchmark.py` work on
@@ -33,7 +33,7 @@ any of the artifacts.
 | `siglip2_infer.py` | shared .pt loader (library, not CLI) | torch |
 | `predict.py` | run any model on images, score vs `metadata.jsonl` | per-backend |
 | `benchmark.py` | latency/throughput for any model | per-backend |
-| `cluster_people.py` | estimate distinct people in a crop folder | sklearn, reportlab |
+| `cluster_images.py` | estimate distinct subjects in an image folder | sklearn, reportlab |
 
 Vendor deps are imported lazily — `predict.py`/`benchmark.py` pick a backend
 from the file extension and only import what that backend needs, so the repo
@@ -173,33 +173,33 @@ model_int8.engine ~262 img/s, int8-dynamic.pt (CPU) ~11 img/s.
 3. The collector only loads `.pt` today — `.onnx`/`.engine` serving would
    need a new loader path in its inference code.
 
-## Count distinct people in a crop folder
+## Count distinct subjects in an image folder
 
-`cluster_people.py` answers the question a crop count can't: how many
-*different people* are actually in the folder. It embeds every image with the
-trained backbone (garment-tuned features — clothing is the dominant identity
-signal in same-session footage), then agglomerative-clusters on cosine
-distance with a `distance_threshold` — no k required.
+`cluster_images.py` answers the question an image count can't: how many
+*visually distinct subjects* are actually in the folder. It embeds every
+image with the trained backbone (features tuned by whatever attributes the
+checkpoint was trained on), then agglomerative-clusters on cosine distance
+with a `distance_threshold` — no k required.
 
 ```bash
-conda run -n closure python cluster_people.py clustering-img \
+conda run -n closure python cluster_images.py clustering-img \
   --checkpoint siglip2-runs/person-attribute-5/best.pt
 ```
 
-- `--checkpoint` defaults to the newest `siglip2-runs/*/best.pt`.
+- `--checkpoint` defaults to the newest `siglip2-runs/*/best.pt` — pass one
+  trained on the kind of images you're clustering.
 - Without `--threshold` it sweeps 0.05–0.55, prints the count-vs-threshold
   curve, and auto-picks the knee. Pass `--threshold` to pin it; `--method
   kmeans` sweeps k by silhouette instead (worse fit — cluster sizes vary).
 - Per-cluster attribute profiles come from the heads' predictions (not ground
-  truth); "mixed" attributes in a cluster usually mean two people merged.
+  truth); "mixed" attributes in a cluster usually mean two subjects merged.
 
 Outputs in the input dir: `clusters.json` (per-file cluster + per-cluster
 summary), `clusters_report.txt`, `clusters_report.pdf` (styled report with
-montage cards and per-zone grouping — zones are dummy hash-assigned until
-real location metadata exists), `clusters_montage/` (one JPEG per cluster,
+per-cluster montage cards), `clusters_montage/` (one JPEG per cluster,
 filename carries size/coherence/profile — review lowest-q first), and
-`.people_embeddings.npz` (feature cache — reruns are instant; delete to
-re-embed).
+`.embeddings.npz` (feature cache — reruns are instant; delete to re-embed;
+old `.people_embeddings.npz` caches are still read).
 
-Caveat: same person in different clothes splits, different people in uniform
-merge. Single-session footage only.
+Caveat: different looks of the same subject split; visually similar distinct
+subjects merge.

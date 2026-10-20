@@ -1,7 +1,7 @@
 # siglip2_infer.py — shared inference helper (library)
 
 Not a CLI — the module everything else loads checkpoints through:
-`predict.py`, `export_onnx.py`, `cluster_people.py`, and a vendored copy in
+`predict.py`, `export_onnx.py`, `cluster_images.py`, and a vendored copy in
 the dataset-collector server for pre-labeling. Intentionally
 self-contained: this directory must not depend on collector code.
 
