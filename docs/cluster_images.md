@@ -4,6 +4,9 @@ Answers the question an image count can't: **how many visually distinct
 subjects are actually in this folder?** Supplementary analysis — not part
 of the train/deploy artifact path.
 
+Needs `requirements-train.txt` deps — `scikit-learn` for clustering and
+`reportlab` for the PDF report (`--no-pdf` skips it if not installed).
+
 ```bash
 conda run -n closure python cluster_images.py clustering-img \
     --checkpoint siglip2-runs/person-attribute-5/best.pt
@@ -66,7 +69,7 @@ aren't. Prefer agglo.
 | `clusters_report.txt` | per-cluster dominant profile + `mixed:` lines where members disagree — disagreement on an attribute usually means two subjects merged |
 | `clusters_montage/` | one JPEG per cluster — filename carries `n` (size) + `q` (coherence, mean intra-cluster similarity) + dominant attributes. **Review lowest-q first** — they're the likely merged-subject clusters |
 | `clusters_report.pdf` | styled report: cover stats + cluster cards with thumbnails |
-| `.embeddings.npz` | derived cache (`x`, `files`, `ckpt`, `preds`) — reruns are instant; invalidated when files/checkpoint change. Gitignored; safe to delete to force re-embed |
+| `.embeddings.npz` | derived cache (`x`, `files`, `ckpt`, `preds`) — reruns are instant; invalidated when files/checkpoint change. Gitignored; safe to delete to force re-embed. Legacy `.people_embeddings.npz` caches are still read as a fallback |
 
 `--link-dir` writes symlinks to full-res originals when montage thumbnails
 are too small to judge.

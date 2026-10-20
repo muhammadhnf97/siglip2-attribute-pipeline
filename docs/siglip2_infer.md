@@ -54,7 +54,7 @@ Consequences:
 - Groups missing from the checkpoint → left unset, no error
 
 This is what makes schema evolution survivable without retraining — but
-also why new options stay unpredicible until you do retrain.
+also why new options stay unpredictable until you do retrain.
 
 ## multi vs single decoding
 

@@ -43,7 +43,7 @@ paths included).
 Install deps per stage:
 
 ```bash
-pip install -r requirements-train.txt    # train / quantize / predict .pt
+pip install -r requirements-train.txt    # train / quantize / predict .pt / cluster_images
 pip install -r requirements-deploy.txt   # + onnx export, engines, torchao
 ```
 
