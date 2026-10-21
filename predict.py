@@ -14,11 +14,11 @@ through the images for pure timing runs without scoring.
 
 Usage (run inside the `closure` conda env):
 
-    python predict.py --model siglip2-runs/person-attribute-2/model_int8.engine \
-        --data-dir person-attribute-2/test
+    python predict.py --model siglip2-runs/attribute-2/model_int8.engine \
+        --data-dir attribute-2/test
 
-    python predict.py --model siglip2-runs/person-attribute-2/best.pt \
-        --data-dir person-attribute-2/test --show-all
+    python predict.py --model siglip2-runs/attribute-2/best.pt \
+        --data-dir attribute-2/test --show-all
 """
 from __future__ import annotations
 

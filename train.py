@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Fine-tune a SigLIP2 vision backbone for multi-attribute person classification.
+"""Fine-tune a SigLIP2 vision backbone for multi-attribute classification.
 
 Trains one linear head per attribute group (Head, Upper, Sleeve, Lower, Bag,
 Shoes, View, Age, Gender, ... — whatever groups the template's config.yaml
@@ -22,7 +22,7 @@ Usage (run inside the `closure` conda env):
     conda run -n closure python train.py \\
         --export-dir /path/to/dataset/export \\
         --config /path/to/export/config.yaml \\
-        --output-dir /path/to/runs/person_attribute \\
+        --output-dir /path/to/runs/my_run \\
         --epochs 15 --batch-size 32
 
 See `requirements-train.txt` in this directory for the extra packages needed

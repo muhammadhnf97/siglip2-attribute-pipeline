@@ -6,8 +6,8 @@ per-head accuracy + a confusion summary.
 
 ```bash
 conda run -n closure python predict.py \
-    --model siglip2-runs/person-attribute-5/best.pt \
-    --data-dir person-attribute-5/test
+    --model siglip2-runs/attribute-5/best.pt \
+    --data-dir attribute-5/test
 ```
 
 ## Inputs

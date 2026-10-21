@@ -4,6 +4,7 @@ __pycache__/
 # Datasets / exported splits (dirs holding train/validation/test images)
 gender-age-*/
 person-attribute-*/
+attribute-*/
 clustering-img/
 *.tar
 *.jpg

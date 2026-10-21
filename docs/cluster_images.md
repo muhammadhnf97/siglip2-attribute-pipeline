@@ -9,7 +9,7 @@ Needs `requirements-train.txt` deps — `scikit-learn` for clustering and
 
 ```bash
 conda run -n closure python cluster_images.py clustering-img \
-    --checkpoint siglip2-runs/person-attribute-5/best.pt
+    --checkpoint siglip2-runs/attribute-5/best.pt
 ```
 
 ## How it works — three phases

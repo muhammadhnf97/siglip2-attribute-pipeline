@@ -6,10 +6,10 @@ assuming it.
 
 ```bash
 conda run -n closure python quantize.py \
-    --checkpoint siglip2-runs/person-attribute-5/best.pt \
-    --output-dir siglip2-runs/person-attribute-5 \
+    --checkpoint siglip2-runs/attribute-5/best.pt \
+    --output-dir siglip2-runs/attribute-5 \
     --mode fp16 \
-    --export-dir person-attribute-5 --config person-attribute-5/config.yaml
+    --export-dir attribute-5 --config attribute-5/config.yaml
 ```
 
 ## Modes — three genuinely different trades

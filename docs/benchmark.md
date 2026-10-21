@@ -6,13 +6,13 @@ every backend, so numbers are directly comparable.
 ```bash
 # everything in a run dir
 conda run -n closure python benchmark.py \
-    --model siglip2-runs/person-attribute-5 \
-    --data-dir person-attribute-5/test --num-images 300
+    --model siglip2-runs/attribute-5 \
+    --data-dir attribute-5/test --num-images 300
 
 # one specific artifact
 conda run -n closure python benchmark.py \
-    --model siglip2-runs/person-attribute-5/model_int8.engine \
-    --data-dir person-attribute-5/test --num-images 300
+    --model siglip2-runs/attribute-5/model_int8.engine \
+    --data-dir attribute-5/test --num-images 300
 ```
 
 ## Inputs

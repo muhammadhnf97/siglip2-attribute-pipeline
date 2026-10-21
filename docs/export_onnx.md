@@ -6,9 +6,9 @@ engines, ONNX Runtime, TPU-MLIR bmodel — all start here.
 
 ```bash
 conda run -n closure python export_onnx.py \
-    --checkpoint siglip2-runs/person-attribute-5/best.pt \
-    --output siglip2-runs/person-attribute-5/model.onnx \
-    --verify-image person-attribute-5/test/000001.jpg
+    --checkpoint siglip2-runs/attribute-5/best.pt \
+    --output siglip2-runs/attribute-5/model.onnx \
+    --verify-image attribute-5/test/000001.jpg
 ```
 
 ## Inputs

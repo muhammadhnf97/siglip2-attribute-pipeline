@@ -58,9 +58,9 @@ the live template gets edited later.
 
 ```bash
 conda run -n closure python train.py \
-  --export-dir person-attribute-2 \
-  --config person-attribute-2/config.yaml \
-  --output-dir siglip2-runs/person-attribute-2 \
+  --export-dir attribute-2 \
+  --config attribute-2/config.yaml \
+  --output-dir siglip2-runs/attribute-2 \
   --checkpoint google/siglip2-base-patch16-224 \
   --epochs 15 --batch-size 32 --balanced-loss
 ```
@@ -84,10 +84,10 @@ a quantized model without that diff.
 
 ```bash
 conda run -n closure python quantize.py \
-  --checkpoint siglip2-runs/person-attribute-2/best.pt \
-  --export-dir person-attribute-2 \
-  --config person-attribute-2/config.yaml \
-  --output-dir siglip2-runs/person-attribute-2-quant \
+  --checkpoint siglip2-runs/attribute-2/best.pt \
+  --export-dir attribute-2 \
+  --config attribute-2/config.yaml \
+  --output-dir siglip2-runs/attribute-2-quant \
   --mode fp16
 ```
 
@@ -103,9 +103,9 @@ conda run -n closure python quantize.py \
 
 ```bash
 conda run -n closure python export_onnx.py \
-  --checkpoint siglip2-runs/person-attribute-2 \
-  --output siglip2-runs/person-attribute-2/model.onnx \
-  --verify-image person-attribute-2/test/020001.jpg
+  --checkpoint siglip2-runs/attribute-2 \
+  --output siglip2-runs/attribute-2/model.onnx \
+  --verify-image attribute-2/test/020001.jpg
 ```
 
 Self-contained single file (weights embedded), all heads as named outputs.
@@ -115,15 +115,15 @@ Self-contained single file (weights embedded), all heads as named outputs.
 
 ```bash
 conda run -n closure python deploy.py \
-  --onnx siglip2-runs/person-attribute-2/model.onnx \
-  --output siglip2-runs/person-attribute-2/model_fp16.engine \
+  --onnx siglip2-runs/attribute-2/model.onnx \
+  --output siglip2-runs/attribute-2/model_fp16.engine \
   --precision fp16
 
 conda run -n closure python deploy.py \
-  --onnx siglip2-runs/person-attribute-2/model.onnx \
-  --output siglip2-runs/person-attribute-2/model_int8.engine \
+  --onnx siglip2-runs/attribute-2/model.onnx \
+  --output siglip2-runs/attribute-2/model_int8.engine \
   --precision int8 \
-  --calib-dir person-attribute-2/test --calib-num 64
+  --calib-dir attribute-2/test --calib-num 64
 ```
 
 `fp16` casts the ONNX then compiles (no calibration). `int8` runs ONNX
@@ -137,8 +137,8 @@ itself, not builder flags.
 
 ```bash
 conda run -n closure python predict.py \
-  --model siglip2-runs/person-attribute-2/model_int8.engine \
-  --data-dir person-attribute-2/test
+  --model siglip2-runs/attribute-2/model_int8.engine \
+  --data-dir attribute-2/test
 ```
 
 Works with `.pt`, `.onnx`, `.engine` (or a dir holding a checkpoint). If the
@@ -151,8 +151,8 @@ keep it beside the artifact when copying.
 
 ```bash
 conda run -n closure python benchmark.py \
-  --model siglip2-runs/person-attribute-2-quant \
-  --data-dir person-attribute-2/test --num-images 300
+  --model siglip2-runs/attribute-2-quant \
+  --data-dir attribute-2/test --num-images 300
 ```
 
 A dir benchmarks every runnable artifact inside it and prints a comparison
@@ -183,7 +183,7 @@ with a `distance_threshold` — no k required.
 
 ```bash
 conda run -n closure python cluster_images.py clustering-img \
-  --checkpoint siglip2-runs/person-attribute-5/best.pt
+  --checkpoint siglip2-runs/attribute-5/best.pt
 ```
 
 - `--checkpoint` defaults to the newest `siglip2-runs/*/best.pt` — pass one

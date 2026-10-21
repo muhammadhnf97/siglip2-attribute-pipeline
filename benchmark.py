@@ -12,11 +12,11 @@ numbers are comparable.
 
 Usage (run inside the `closure` conda env):
 
-    python benchmark.py --model siglip2-runs/person-attribute-2 \
-        --data-dir person-attribute-2/test --num-images 300
+    python benchmark.py --model siglip2-runs/attribute-2 \
+        --data-dir attribute-2/test --num-images 300
 
-    python benchmark.py --model siglip2-runs/person-attribute-2/model_int8.engine \
-        --data-dir person-attribute-2/test --num-images 300
+    python benchmark.py --model siglip2-runs/attribute-2/model_int8.engine \
+        --data-dir attribute-2/test --num-images 300
 """
 from __future__ import annotations
 

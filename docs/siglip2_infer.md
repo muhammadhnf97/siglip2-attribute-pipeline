@@ -10,7 +10,7 @@ self-contained: this directory must not depend on collector code.
 ```python
 import siglip2_infer
 
-predictor = siglip2_infer.load_predictor("siglip2-runs/person-attribute-5")
+predictor = siglip2_infer.load_predictor("siglip2-runs/attribute-5")
 # -> (model, processor, groups, device)
 
 values = siglip2_infer.predict_values(img_path, predictor, attr_groups)

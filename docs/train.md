@@ -1,13 +1,13 @@
 # train.py — inputs & outputs
 
-Fine-tunes a SigLIP2 vision backbone for multi-attribute person classification:
+Fine-tunes a SigLIP2 vision backbone for multi-attribute classification:
 one shared vision tower + one linear head per attribute group.
 
 ```bash
 conda run -n closure python train.py \
-    --export-dir person-attribute-5 \
-    --config person-attribute-5/config.yaml \
-    --output-dir siglip2-runs/person-attribute-5 \
+    --export-dir attribute-5 \
+    --config attribute-5/config.yaml \
+    --output-dir siglip2-runs/attribute-5 \
     --epochs 15 --batch-size 32
 ```
 
@@ -124,7 +124,7 @@ Epoch 3/15
   Hoodie moved Upper→Outer), old `best.pt` files have stale head shapes —
   retrain; they are not loadable as-is.
 - **No augmentation** — images go straight through the processor. Deduped,
-  repeated crops of the same person can overfit; keep an eye on train/val gap.
+  repeated crops of the same subject can overfit; keep an eye on train/val gap.
 - **Missing groups = no loss.** If a metadata row lacks a key entirely it
   trains nothing for that head — a column of `null`s silently wastes epochs.
 - GPU falls back to CPU automatically; `--no-amp` is a no-op there.

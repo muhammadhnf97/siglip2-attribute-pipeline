@@ -20,15 +20,15 @@ changes.
 Usage (run inside the `closure` conda env):
 
     conda run -n closure python deploy.py \
-        --onnx siglip2-runs/person-attribute-2/model.onnx \
-        --output siglip2-runs/person-attribute-2/model_fp16.engine \
+        --onnx siglip2-runs/attribute-2/model.onnx \
+        --output siglip2-runs/attribute-2/model_fp16.engine \
         --precision fp16
 
     conda run -n closure python deploy.py \
-        --onnx siglip2-runs/person-attribute-2/model.onnx \
-        --output siglip2-runs/person-attribute-2/model_int8.engine \
+        --onnx siglip2-runs/attribute-2/model.onnx \
+        --output siglip2-runs/attribute-2/model_int8.engine \
         --precision int8 \
-        --calib-dir person-attribute-2/test --calib-num 64
+        --calib-dir attribute-2/test --calib-num 64
 """
 from __future__ import annotations
 

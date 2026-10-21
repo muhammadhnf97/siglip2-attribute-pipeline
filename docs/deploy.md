@@ -7,16 +7,16 @@ after GPU/driver/TRT changes.
 ```bash
 # fp16 — Tensor Core kernels, no calibration needed
 conda run -n closure python deploy.py \
-    --onnx siglip2-runs/person-attribute-5/model.onnx \
-    --output siglip2-runs/person-attribute-5/model_fp16.engine \
+    --onnx siglip2-runs/attribute-5/model.onnx \
+    --output siglip2-runs/attribute-5/model_fp16.engine \
     --precision fp16
 
 # int8 — needs real calibration images
 conda run -n closure python deploy.py \
-    --onnx siglip2-runs/person-attribute-5/model.onnx \
-    --output siglip2-runs/person-attribute-5/model_int8.engine \
+    --onnx siglip2-runs/attribute-5/model.onnx \
+    --output siglip2-runs/attribute-5/model_int8.engine \
     --precision int8 \
-    --calib-dir person-attribute-5/test --calib-num 64
+    --calib-dir attribute-5/test --calib-num 64
 ```
 
 ## Inputs
